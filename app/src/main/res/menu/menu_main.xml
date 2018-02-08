@@ -3,8 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".AddToDoActivity">
 
-
-
+    <item
+        android:id="@+id/menu_item_sumup"
+        android:title="@string/sumup_title"
+        app:showAsAction="never"
+        />
 
     <item
         android:id="@+id/preferences"

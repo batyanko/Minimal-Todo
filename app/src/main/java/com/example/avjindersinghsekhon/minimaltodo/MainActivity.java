@@ -342,6 +342,11 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
                 return true;
 
+            case R.id.menu_item_sumup:
+                Intent sumupIntent = new Intent(this, SumupActivity.class);
+                startActivity(sumupIntent);
+                return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }

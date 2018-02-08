@@ -28,4 +28,6 @@
     <string name="snooze">Snooze</string>
     <string name="remove">Remove</string>
     <string name="todo_error">Please enter a Todo</string>
+    <string name="transaction_output">Transaction output empty.</string>
+    <string name="sumup_title">Sumup Payment</string>
 </resources>
