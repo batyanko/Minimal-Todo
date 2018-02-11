@@ -1,7 +1,11 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 
-def SUMUP_AFF_KEY = '"' + SumupApiKey + '"' ?: '"Define Sumup Affiliate key"';
+def SUMUP_AFF_KEY = '"' + SumupApiKey + '"' ?: '"Define Sumup affiliate key"';
+def MINIMAL_ID = '"' + SumupAppId + '"' ?: '"Define Sumup app ID"';
+def MINIMAL_CLIENT_ID = '"' + SumupAppClientId + '"' ?: '"Define Sumup app client ID"';
+def MINIMAL_NAME = '"' + SumupAppName + '"' ?: '"Define Sumup app name"';
+def MINIMAL_CLIENT_SECRET = '"' + SumupAppSecret + '"' ?: '"Define Sumup app secret"';
 
 android {
     signingConfigs {
@@ -28,6 +32,10 @@ android {
         }
         debug {
             buildConfigField ("String", "SUMUP_AFF_KEY", SUMUP_AFF_KEY)
+            buildConfigField ("String", "MINIMAL_ID", MINIMAL_ID)
+            buildConfigField ("String", "MINIMAL_CLIENT_ID", MINIMAL_CLIENT_ID)
+            buildConfigField ("String", "MINIMAL_NAME", MINIMAL_NAME)
+            buildConfigField ("String", "MINIMAL_CLIENT_SECRET", MINIMAL_CLIENT_SECRET)
         }
     }
 

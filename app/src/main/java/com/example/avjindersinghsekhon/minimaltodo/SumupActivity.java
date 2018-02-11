@@ -2,10 +2,11 @@ package com.example.avjindersinghsekhon.minimaltodo;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -27,6 +28,12 @@ import com.sumup.merchant.api.SumUpState;
 import com.sumup.merchant.Models.TransactionInfo;
 
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -37,6 +44,11 @@ public class SumupActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_LOGIN = 1;
     private static final int REQUEST_CODE_PAYMENT = 2;
 
+    private static final String PREF_AUTH_CODE = "auth-code";
+    private static final String PREF_TOKEN = "token";
+
+    private SharedPreferences pref;
+
     private TextView outputView;
 
     @Override
@@ -44,6 +56,8 @@ public class SumupActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         SumUpState.init(this);
         setContentView(R.layout.activity_sumup);
+
+        pref = pref = PreferenceManager.getDefaultSharedPreferences(this);
 
         //TODO enable Themes?
 
@@ -80,15 +94,7 @@ public class SumupActivity extends AppCompatActivity {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     contactsPopupWindow.setElevation(100f);
-                } /*else {
-                    int backgroundColor = (pref.getBoolean(THEME, THEME_LIGHT)) ?
-                            getResources().getColor(R.color.backgroundLight)
-                            :
-                            getResources().getColor(R.color.backgroundDark);
-                    contactsPopupWindow.setBackgroundDrawable(
-                            new ColorDrawable(backgroundColor)
-                    );
-                }*/
+                }
 
                 TextView contactEntryMessageTv = contactLayout.findViewById(R.id.contact_entry_message);
                 String message = getString(R.string.contact_entry_message)
@@ -126,27 +132,15 @@ public class SumupActivity extends AppCompatActivity {
                     }
                 });
                 contactsPopupWindow.showAtLocation(btnCharge, Gravity.CENTER, 0, 0);
-
-//                contactsPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
-//                    @Override
-//                    public void onDismiss() {
-//                        if (pref.getBoolean(FIRST_RUN, true)) {
-//                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-//                                WaveActivity.this.finishAffinity();
-//                            } else {
-//                                WaveActivity.this.finish();
-//                            }
-//                        }
-//                    }
-//                });
             }
         });
 
         outputView = (TextView) findViewById(R.id.outputView);
 
-//        URL receiptRequestUrl = NetworkUtils.buildUrl("123", "batyanko");
-//        new ReceiptQueryTask().execute(receiptRequestUrl);
-
+        new TokenQueryTask().execute();
+//        URL authUrl = NetworkUtils.buildAuthorizationUrl();
+//        Log.d("AuthURI", authUrl.toString());
+//        new AuthQueryTask().execute(authUrl);
     }
 
 
@@ -173,9 +167,7 @@ public class SumupActivity extends AppCompatActivity {
                 TransactionInfo txInfo = extra.getParcelable(SumUpAPI.Response.TX_INFO);
                 String merchantCode = txInfo.getMerchantCode();
 
-                //https://receipts-ng.sumup.com/v0.1/receipts/TRANSACTION_CODE?mid=YOUR_MERCHANT_CODE
-
-                URL receiptRequestUrl = NetworkUtils.buildUrl(txCode, merchantCode);
+                URL receiptRequestUrl = NetworkUtils.buildReceiptRequestUrl(txCode, merchantCode);
                 new ReceiptQueryTask().execute(receiptRequestUrl);
 
                 outputView.append("\nTransaction Code: " + txCode);
@@ -186,6 +178,12 @@ public class SumupActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * AsyncTask to fetch receipt for a given transaction.
+     *
+     * @return The contents of the HTTP response.
+     * @throws IOException Related to network and stream reading
+     */
     public class ReceiptQueryTask extends AsyncTask<URL, Void, String> {
 
 
@@ -201,14 +199,101 @@ public class SumupActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            JSONObject object = null;
+
+            try {
+                object = new JSONObject(receiptResponceFromSumup);
+                //TODO parse receipt JSON as per actual JSON structure. Dummy JSON getters below...
+                object.getString("Receipt data 1");
+                object.getString("Receipt data 2");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
             return receiptResponceFromSumup;
         }
 
         @Override
         protected void onPostExecute(String receipt) {
             if (receipt != null && !receipt.equals("")) {
-                //Populate output
-                outputView.setText(receipt);
+                outputView.append(receipt);
+            } else {
+                Log.d("nullResult", "check");
+            }
+        }
+    }
+
+    //TODO enable merchant authorization. Store auth_ code on incoming intent...
+    /**
+     * AsyncTask to invoke merchant authorization.
+     *
+     * @throws IOException Related to network and stream reading
+     */
+    public class AuthQueryTask extends AsyncTask<URL, Void, String> {
+
+        @Override
+        protected String doInBackground(URL... params) {
+            URL requestUrl = params[0];
+            String authResponceFromSumup = null;
+            Log.d("doInBcg", params[0].toString());
+
+            try {
+                authResponceFromSumup = NetworkUtils.getResponseFromHttpUrl(requestUrl);
+                Log.d("TehAuthResponse", authResponceFromSumup + "");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return authResponceFromSumup;
+        }
+
+        @Override
+        protected void onPostExecute(String authResponse) {
+            if (authResponse != null && !authResponse.equals("")) {
+                outputView.append(authResponse);
+            } else {
+                Log.d("nullResult", "check");
+            }
+        }
+    }
+
+    /**
+     * AsyncTask to fetch Sumup token.
+     *
+     * @throws IOException Related to network and stream reading
+     */
+    public class TokenQueryTask extends AsyncTask<Void, Void, String> {
+
+        @Override
+        protected String doInBackground(Void... params) {
+            String tokenResponceFromSumup = null;
+            String token = null;
+
+            try {
+                tokenResponceFromSumup = NetworkUtils.getPostResponseFromHttpUrl();
+                Log.d("TehTokenResponse", tokenResponceFromSumup + "");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            JSONObject object = null;
+
+            try {
+                object = new JSONObject(tokenResponceFromSumup);
+                token = object.getString("access_token");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return token;
+        }
+
+        @Override
+        protected void onPostExecute(String authResponse) {
+            if (authResponse != null && !authResponse.equals("")) {
+
+                outputView.append(authResponse);
+
             } else {
                 Log.d("nullResult", "check");
             }

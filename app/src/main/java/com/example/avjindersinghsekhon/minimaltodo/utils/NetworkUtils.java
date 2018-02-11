@@ -18,6 +18,8 @@ package com.example.avjindersinghsekhon.minimaltodo.utils;
 import android.net.Uri;
 import android.util.Log;
 
+import com.example.avjindersinghsekhon.minimaltodo.BuildConfig;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,29 +37,11 @@ public class NetworkUtils {
     /**
      * Builds the URL used to query for a Sumup receipt.
      *
-     * @param txCode Transaction code
+     * @param txCode       Transaction code
      * @param merchantCode Merchant code
      * @return The URL to use to query for receipt
      */
-    public static URL buildUrl(String txCode, String merchantCode) {
-
-/*        Uri.Builder builder = new Uri.Builder();
-        builder.scheme("https")
-                .authority("receipts-ng.sumup.com")
-                .appendPath("v0.1")
-                .appendPath("receipts")
-                .appendPath(txCode)
-                .appendQueryParameter("mid", merchantCode);
-        Uri builtUri = builder.build();
-
-        URL url = null;
-        try {
-            url = new URL(builtUri.toString());
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-
-        return url;*/
+    public static URL buildReceiptRequestUrl(String txCode, String merchantCode) {
 
         Uri builtUri = Uri.parse("https://receipts-ng.sumup.com/v0.1/receipts").buildUpon()
                 .appendPath(txCode)
@@ -74,30 +58,30 @@ public class NetworkUtils {
         return url;
     }
 
+    public static URL buildAuthorizationUrl() {
+
+        String urlString = "https://api.sumup.com/authorize?"
+                + "response_type=code&"
+                + "client_id=" + BuildConfig.MINIMAL_CLIENT_ID + "&"
+                + "redirect_uri=https://sites.google.com/view/strokeratecoach/home";
+
+        URL url = null;
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return url;
+    }
+
     /**
-     * This method returns the entire result from the HTTP response.
+     * Method to return the entire result from the HTTP response.
      *
      * @param url The URL to fetch the HTTP response from.
      * @return The contents of the HTTP response.
      * @throws IOException Related to network and stream reading
      */
     public static String getResponseFromHttpUrl(URL url) throws IOException {
-        /*HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-        try {
-            InputStream in = urlConnection.getInputStream();
-
-            Scanner scanner = new Scanner(in);
-            scanner.useDelimiter("\\A");
-
-            boolean hasInput = scanner.hasNext();
-            if (hasInput) {
-                return scanner.next();
-            } else {
-                return null;
-            }
-        } finally {
-            urlConnection.disconnect();
-        }*/
 
         HttpURLConnection connection = null;
         BufferedReader reader = null;
@@ -115,7 +99,7 @@ public class NetworkUtils {
             String line = "";
 
             while ((line = reader.readLine()) != null) {
-                buffer.append(line+"\n");
+                buffer.append(line + "\n");
                 Log.d("Response: ", "> " + line);   //here u ll get whole response...... :-)
 
             }
@@ -140,7 +124,46 @@ public class NetworkUtils {
             }
         }
         return null;
+    }
 
-        //TODO close leaked connection
+    /**
+     * Method to return Sumup token data from a HTTP POST request.
+     *
+     * @return The contents of the HTTP response.
+     * @throws IOException Related to network and stream reading
+     */
+    public static String getPostResponseFromHttpUrl() throws IOException {
+        Log.d("onPostResponse", "check");
+        URL url = new URL("https://api.sumup.com/token");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setInstanceFollowRedirects(true);
+        connection.setDoOutput(true);
+        connection.setRequestProperty("grant_type", "authorization_code");
+        connection.setRequestProperty("client_id", BuildConfig.MINIMAL_CLIENT_ID);
+        connection.setRequestProperty("client_secret", BuildConfig.MINIMAL_CLIENT_SECRET);
+        connection.setRequestProperty("redirect_uri", "https://sites.google.com/view/strokeratecoach/home");
+        connection.setRequestProperty("code", "2145d70c2f58ba3e78647a88d84015b7caca95efac958d86");
+
+        Log.d("status", " " + connection.getRequestProperties().toString());
+
+
+        int responseCode = connection.getResponseCode();
+
+        InputStream errorStream = connection.getErrorStream();
+//        InputStream stream = connection.getInputStream();
+        Log.d("status", responseCode + " ");
+
+        BufferedReader reader = null;
+        reader = new BufferedReader(new InputStreamReader(errorStream));
+        StringBuffer buffer = new StringBuffer();
+        String line = "";
+        while ((line = reader.readLine()) != null) {
+            buffer.append(line + "\n");
+        }
+
+        Log.d("status", responseCode + " / " + buffer.toString());
+
+        return buffer.toString();
     }
 }
