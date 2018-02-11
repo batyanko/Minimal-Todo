@@ -30,4 +30,10 @@
     <string name="todo_error">Please enter a Todo</string>
     <string name="transaction_output">Transaction output empty.</string>
     <string name="sumup_title">Sumup Payment</string>
+    <string name="contact_entry_message">Please enter your contact details for a receipt of </string>
+    <string name="payment_sum" translatable="false">2.15</string>
+    <string name="email_address_title">E-mail address:</string>
+    <string name="phone_title">Phone number:</string>
+    <string name="contact_entry_button_title">Proceed to payment</string>
+
 </resources>
