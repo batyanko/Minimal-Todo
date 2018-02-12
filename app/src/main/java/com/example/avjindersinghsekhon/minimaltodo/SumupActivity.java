@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.preference.PreferenceManager;
@@ -36,6 +37,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.UUID;
 
@@ -56,6 +59,13 @@ public class SumupActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         SumUpState.init(this);
         setContentView(R.layout.activity_sumup);
+
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        Uri data = intent.getData();
+
+        Log.d("Intentt", data != null ? data.toString() : "null");
+        Log.d("Intentt", action != null ? action : "null");
 
         pref = pref = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -89,7 +99,7 @@ public class SumupActivity extends AppCompatActivity {
 
                 final PopupWindow contactsPopupWindow = new PopupWindow(contactLayout, windowWidth, LinearLayout.LayoutParams.WRAP_CONTENT, true);
                 //TODO set correct theme
-                                contactsPopupWindow.setBackgroundDrawable(
+                contactsPopupWindow.setBackgroundDrawable(
                         new ColorDrawable(getResources().getColor(R.color.accent)));
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -137,10 +147,15 @@ public class SumupActivity extends AppCompatActivity {
 
         outputView = (TextView) findViewById(R.id.outputView);
 
-        new TokenQueryTask().execute();
 //        URL authUrl = NetworkUtils.buildAuthorizationUrl();
+
+//        Intent browserIntent = new Intent(Intent.ACTION_VIEW, NetworkUtils.buildAuthorizationUrl(this));
+//        startActivity(browserIntent);
 //        Log.d("AuthURI", authUrl.toString());
 //        new AuthQueryTask().execute(authUrl);
+
+//        new TokenQueryTask().execute();
+
     }
 
 
@@ -225,6 +240,7 @@ public class SumupActivity extends AppCompatActivity {
     }
 
     //TODO enable merchant authorization. Store auth_ code on incoming intent...
+
     /**
      * AsyncTask to invoke merchant authorization.
      *

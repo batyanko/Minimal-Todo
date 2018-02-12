@@ -6,6 +6,7 @@ def MINIMAL_ID = '"' + SumupAppId + '"' ?: '"Define Sumup app ID"';
 def MINIMAL_CLIENT_ID = '"' + SumupAppClientId + '"' ?: '"Define Sumup app client ID"';
 def MINIMAL_NAME = '"' + SumupAppName + '"' ?: '"Define Sumup app name"';
 def MINIMAL_CLIENT_SECRET = '"' + SumupAppSecret + '"' ?: '"Define Sumup app secret"';
+def MINIMAL_REDIRECT_URL = '"' + SumupRedirectURL + '"' ?: '"Define Sumup redirect URL"';
 
 android {
     signingConfigs {
@@ -36,6 +37,7 @@ android {
             buildConfigField ("String", "MINIMAL_CLIENT_ID", MINIMAL_CLIENT_ID)
             buildConfigField ("String", "MINIMAL_NAME", MINIMAL_NAME)
             buildConfigField ("String", "MINIMAL_CLIENT_SECRET", MINIMAL_CLIENT_SECRET)
+            resValue ("string", "MINIMAL_REDIRECT_URL", MINIMAL_REDIRECT_URL)
         }
     }
 

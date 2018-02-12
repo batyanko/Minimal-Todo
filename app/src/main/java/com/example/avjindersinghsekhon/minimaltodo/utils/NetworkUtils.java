@@ -15,10 +15,12 @@
  */
 package com.example.avjindersinghsekhon.minimaltodo.utils;
 
+import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 
 import com.example.avjindersinghsekhon.minimaltodo.BuildConfig;
+import com.example.avjindersinghsekhon.minimaltodo.R;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,6 +28,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Scanner;
 
@@ -58,19 +61,23 @@ public class NetworkUtils {
         return url;
     }
 
-    public static URL buildAuthorizationUrl() {
+    public static Uri buildAuthorizationUrl(Context context) {
 
         String urlString = "https://api.sumup.com/authorize?"
                 + "response_type=code&"
                 + "client_id=" + BuildConfig.MINIMAL_CLIENT_ID + "&"
-                + "redirect_uri=https://sites.google.com/view/strokeratecoach/home";
+                + "redirect_uri=" + context.getString(R.string.MINIMAL_REDIRECT_URL);
 
+        Log.d("authUrl", urlString);
+        Uri url = null;
+        url = Uri.parse(urlString);
+        /*
         URL url = null;
         try {
             url = new URL(urlString);
         } catch (MalformedURLException e) {
             e.printStackTrace();
-        }
+        }*/
         return url;
     }
 
