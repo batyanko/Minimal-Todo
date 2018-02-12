@@ -35,5 +35,10 @@
     <string name="email_address_title">E-mail address:</string>
     <string name="phone_title">Phone number:</string>
     <string name="contact_entry_button_title">Proceed to payment</string>
+    <string name="login_button_title">Login</string>
+    <string name="charge_button_title">Charge</string>
+    <string name="request_auth_code_button">Get Auth</string>
+    <string name="request_token_button">Get Token</string>
+    <string name="request_receipt_button">Get Receipt</string>
 
 </resources>

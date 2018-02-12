@@ -12,18 +12,62 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Login"
-        android:layout_gravity="center"/>
+        android:text="@string/login_button_title"
+        android:layout_gravity="center"
+        style="?android:attr/buttonBarButtonStyle"
+        />
 
     <Button
         android:id="@+id/button_charge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Charge"
-        android:layout_gravity="center"/>
+        android:text="@string/charge_button_title"
+        android:layout_gravity="center"
+        style="?android:attr/buttonBarButtonStyle"
+        />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        style="?android:attr/buttonBarStyle"
+        >
+
+        <Button
+            android:id="@+id/button_request_auth"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginBottom="16dp"
+            android:text="@string/request_auth_code_button"
+            android:layout_gravity="center"
+            style="?android:attr/buttonBarButtonStyle"
+            />
+        <Button
+            android:id="@+id/button_request_token"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginBottom="16dp"
+            android:text="@string/request_token_button"
+            android:layout_gravity="center"
+            style="?android:attr/buttonBarButtonStyle"
+            />
+        <Button
+            android:id="@+id/button_request_receipt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginBottom="16dp"
+            android:text="@string/request_receipt_button"
+            android:layout_gravity="center"
+            style="?android:attr/buttonBarButtonStyle"
+            />
+    </LinearLayout>
 
     <ScrollView
+        android:id="@+id/output_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 

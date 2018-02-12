@@ -19,7 +19,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.avjindersinghsekhon.minimaltodo.utils.NetworkUtils;
 import com.sumup.merchant.api.SumUpAPI;
@@ -48,7 +50,8 @@ public class SumupActivity extends AppCompatActivity {
 
     private SharedPreferences pref;
 
-    private TextView outputView;
+    private ScrollView outputScrollView;
+    private TextView outputTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,21 +139,42 @@ public class SumupActivity extends AppCompatActivity {
             }
         });
 
-        outputView = (TextView) findViewById(R.id.outputView);
+        Button authRequestButton = (Button) findViewById(R.id.button_request_auth);
+        authRequestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Uri authUri = NetworkUtils.buildAuthorizationUrl(SumupActivity.this);
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW,
+                        authUri);
+                startActivity(browserIntent);
+                Log.d("AuthURI", authUri.toString());
+            }
+        });
 
-//        URL authUrl = NetworkUtils.buildAuthorizationUrl();
+        Button tokenRequestButton = (Button) findViewById(R.id.button_request_token);
+        tokenRequestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("auth_code", pref.getString(PREF_AUTH_CODE, "null"));
+                //TODO enable POST request to get token
+                Toast.makeText(SumupActivity.this,
+                        "Under construction",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
 
-//        Intent browserIntent = new Intent(Intent.ACTION_VIEW, NetworkUtils.buildAuthorizationUrl(this));
-//        startActivity(browserIntent);
-//        Log.d("AuthURI", authUrl.toString());
-//        new AuthQueryTask().execute(authUrl);
+        Button receiptRequestButton = (Button) findViewById(R.id.button_request_receipt);
+        receiptRequestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new ReceiptQueryTask().execute(NetworkUtils.buildReceiptRequestUrl(
+                        "TDTPUNSPC3", "MCVVMGFK"));
+            }
+        });
 
-//        new TokenQueryTask().execute();
-
+        outputTextView = findViewById(R.id.outputView);
+        outputScrollView = findViewById(R.id.output_scroll_view);
     }
-
-
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -161,13 +185,7 @@ public class SumupActivity extends AppCompatActivity {
 
             int apiResultCode = extra.getInt(SumUpAPI.Response.RESULT_CODE);
 
-            if (outputView.getText().equals(getString(R.string.transaction_output))) {
-                outputView.setText("");
-            } else {
-                outputView.append("\n");
-            }
-            ;
-            outputView.append("Result Code: " + apiResultCode);
+            updateOutput("Result Code: " + apiResultCode);
 
             //Handle successful transaction
             if (apiResultCode == SumUpAPI.Response.ResultCode.SUCCESSFUL) {
@@ -178,8 +196,8 @@ public class SumupActivity extends AppCompatActivity {
                 URL receiptRequestUrl = NetworkUtils.buildReceiptRequestUrl(txCode, merchantCode);
                 new ReceiptQueryTask().execute(receiptRequestUrl);
 
-                outputView.append("\nTransaction Code: " + txCode);
-                outputView.append("\nTransaction Info: " + txInfo);
+                updateOutput("\nTransaction Code: " + txCode);
+                updateOutput("\nTransaction Info: " + txInfo);
 
             }
             String apiResponseMessage = extra.getString(SumUpAPI.Response.MESSAGE);
@@ -197,13 +215,16 @@ public class SumupActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(URL... params) {
+            //TODO check if token is expired, evtl. get another one
             URL searchUrl = params[0];
             String receiptResponceFromSumup = null;
             Log.d("doInBcg", params[0].toString());
 
             try {
-                receiptResponceFromSumup = NetworkUtils.getResponseFromHttpUrl(searchUrl);
-                Log.d("TehReceiptResponse", receiptResponceFromSumup + "");
+                receiptResponceFromSumup = NetworkUtils.requestReceiptFromUrl(
+                        searchUrl,
+                        pref.getString(PREF_TOKEN, "null")
+                );
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -225,7 +246,8 @@ public class SumupActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String receipt) {
             if (receipt != null && !receipt.equals("")) {
-                outputView.append(receipt);
+//                outputTextView.append(receipt);
+                updateOutput(receipt);
             } else {
                 Log.d("nullResult", "check");
             }
@@ -252,7 +274,7 @@ public class SumupActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
 
-            JSONObject object = null;
+            JSONObject object;
 
             try {
                 object = new JSONObject(tokenResponceFromSumup);
@@ -260,9 +282,11 @@ public class SumupActivity extends AppCompatActivity {
                 ttl = object.getInt("expires_in");
                 pref.edit().putString(PREF_TOKEN, token).apply();
                 pref.edit().putLong(PREF_TOKEN_EXPIRY_EPOCH,
-                        System.currentTimeMillis() + ttl*1000).apply();
+                        System.currentTimeMillis() + ttl * 1000).apply();
             } catch (JSONException e) {
                 e.printStackTrace();
+            } catch (NullPointerException n) {
+                n.printStackTrace();
             }
 
             return new String[]{token};
@@ -273,7 +297,7 @@ public class SumupActivity extends AppCompatActivity {
 
             if ((tokenData.length >= 1) && tokenData[0] != null) {
 
-                outputView.append("Token: " + tokenData[0] + "Token Expiry: ");
+                updateOutput("Token: " + tokenData[0] + "Token Expiry: ");
 
             } else {
                 Log.d("nullResult", "check");
@@ -297,5 +321,27 @@ public class SumupActivity extends AppCompatActivity {
 
             new TokenQueryTask().execute(authCode);
         }
+    }
+
+    /**
+     * Append to output TextView console-like.
+     *
+     * @param line String to append.
+     */
+    private void updateOutput(String line) {
+        if (outputTextView.getText().equals(getString(R.string.transaction_output))) {
+            outputTextView.setText("");
+        } else {
+            outputTextView.append("\n");
+        }
+
+        outputTextView.append(line);
+        outputTextView.post(new Runnable() {
+            @Override
+            public void run() {
+                outputScrollView.pageScroll(View.FOCUS_DOWN);
+            }
+        });
+
     }
 }
