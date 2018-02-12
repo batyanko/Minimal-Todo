@@ -32,13 +32,8 @@ import com.sumup.merchant.Models.TransactionInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.UUID;
 
@@ -49,6 +44,7 @@ public class SumupActivity extends AppCompatActivity {
 
     private static final String PREF_AUTH_CODE = "auth-code";
     private static final String PREF_TOKEN = "token";
+    private static final String PREF_TOKEN_EXPIRY_EPOCH = "token-expiry-epoch";
 
     private SharedPreferences pref;
 
@@ -60,14 +56,9 @@ public class SumupActivity extends AppCompatActivity {
         SumUpState.init(this);
         setContentView(R.layout.activity_sumup);
 
-        Intent intent = getIntent();
-        String action = intent.getAction();
-        Uri data = intent.getData();
-
-        Log.d("Intentt", data != null ? data.toString() : "null");
-        Log.d("Intentt", action != null ? action : "null");
-
         pref = pref = PreferenceManager.getDefaultSharedPreferences(this);
+
+        handleAuthIntent();
 
         //TODO enable Themes?
 
@@ -159,6 +150,8 @@ public class SumupActivity extends AppCompatActivity {
     }
 
 
+
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -239,55 +232,21 @@ public class SumupActivity extends AppCompatActivity {
         }
     }
 
-    //TODO enable merchant authorization. Store auth_ code on incoming intent...
-
-    /**
-     * AsyncTask to invoke merchant authorization.
-     *
-     * @throws IOException Related to network and stream reading
-     */
-    public class AuthQueryTask extends AsyncTask<URL, Void, String> {
-
-        @Override
-        protected String doInBackground(URL... params) {
-            URL requestUrl = params[0];
-            String authResponceFromSumup = null;
-            Log.d("doInBcg", params[0].toString());
-
-            try {
-                authResponceFromSumup = NetworkUtils.getResponseFromHttpUrl(requestUrl);
-                Log.d("TehAuthResponse", authResponceFromSumup + "");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return authResponceFromSumup;
-        }
-
-        @Override
-        protected void onPostExecute(String authResponse) {
-            if (authResponse != null && !authResponse.equals("")) {
-                outputView.append(authResponse);
-            } else {
-                Log.d("nullResult", "check");
-            }
-        }
-    }
-
     /**
      * AsyncTask to fetch Sumup token.
      *
      * @throws IOException Related to network and stream reading
      */
-    public class TokenQueryTask extends AsyncTask<Void, Void, String> {
+    public class TokenQueryTask extends AsyncTask<String, Void, String[]> {
 
         @Override
-        protected String doInBackground(Void... params) {
+        protected String[] doInBackground(String... params) {
             String tokenResponceFromSumup = null;
             String token = null;
+            int ttl = 0;
 
             try {
-                tokenResponceFromSumup = NetworkUtils.getPostResponseFromHttpUrl();
+                tokenResponceFromSumup = NetworkUtils.getPostResponseFromHttpUrl(params[0]);
                 Log.d("TehTokenResponse", tokenResponceFromSumup + "");
             } catch (IOException e) {
                 e.printStackTrace();
@@ -298,21 +257,45 @@ public class SumupActivity extends AppCompatActivity {
             try {
                 object = new JSONObject(tokenResponceFromSumup);
                 token = object.getString("access_token");
+                ttl = object.getInt("expires_in");
+                pref.edit().putString(PREF_TOKEN, token).apply();
+                pref.edit().putLong(PREF_TOKEN_EXPIRY_EPOCH,
+                        System.currentTimeMillis() + ttl*1000).apply();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            return token;
+
+            return new String[]{token};
         }
 
         @Override
-        protected void onPostExecute(String authResponse) {
-            if (authResponse != null && !authResponse.equals("")) {
+        protected void onPostExecute(String[] tokenData) {
 
-                outputView.append(authResponse);
+            if ((tokenData.length >= 1) && tokenData[0] != null) {
+
+                outputView.append("Token: " + tokenData[0] + "Token Expiry: ");
 
             } else {
                 Log.d("nullResult", "check");
             }
+        }
+    }
+
+    private void handleAuthIntent() {
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        Uri data = intent.getData();
+
+        if (data != null) {
+            Log.d("Intentt", data.toString());
+            Log.d("Intentt", action != null ? action : "null");
+            String authCode = Uri.parse(data.toString()).getQueryParameter("code");
+
+            Log.d("Intentt", authCode);
+
+            pref.edit().putString(PREF_AUTH_CODE, authCode).apply();
+
+            new TokenQueryTask().execute(authCode);
         }
     }
 }

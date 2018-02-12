@@ -139,7 +139,7 @@ public class NetworkUtils {
      * @return The contents of the HTTP response.
      * @throws IOException Related to network and stream reading
      */
-    public static String getPostResponseFromHttpUrl() throws IOException {
+    public static String getPostResponseFromHttpUrl(String authCode) throws IOException {
         Log.d("onPostResponse", "check");
         URL url = new URL("https://api.sumup.com/token");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -150,7 +150,7 @@ public class NetworkUtils {
         connection.setRequestProperty("client_id", BuildConfig.MINIMAL_CLIENT_ID);
         connection.setRequestProperty("client_secret", BuildConfig.MINIMAL_CLIENT_SECRET);
         connection.setRequestProperty("redirect_uri", "https://sites.google.com/view/strokeratecoach/home");
-        connection.setRequestProperty("code", "2145d70c2f58ba3e78647a88d84015b7caca95efac958d86");
+        connection.setRequestProperty("code", authCode);
 
         Log.d("status", " " + connection.getRequestProperties().toString());
 
