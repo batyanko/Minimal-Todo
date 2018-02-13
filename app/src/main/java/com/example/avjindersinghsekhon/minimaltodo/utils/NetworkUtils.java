@@ -30,7 +30,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Scanner;
 
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
@@ -77,18 +76,12 @@ public class NetworkUtils {
         Log.d("authUrl", urlString);
         Uri url = null;
         url = Uri.parse(urlString);
-        /*
-        URL url = null;
-        try {
-            url = new URL(urlString);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }*/
+
         return url;
     }
 
     /**
-     * Method to return the entire result from the HTTP response.
+     * Return the entire result from the HTTP response.
      *
      * @param url The URL to fetch the HTTP response from.
      * @return The contents of the HTTP response.
@@ -103,7 +96,6 @@ public class NetworkUtils {
             connection = (HttpURLConnection) url.openConnection();
             connection.connect();
 
-
             InputStream stream = connection.getInputStream();
 
             reader = new BufferedReader(new InputStreamReader(stream));
@@ -114,11 +106,9 @@ public class NetworkUtils {
             while ((line = reader.readLine()) != null) {
                 buffer.append(line + "\n");
                 Log.d("Response: ", "> " + line);   //here u ll get whole response...... :-)
-
             }
 
             return buffer.toString();
-
 
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -139,6 +129,14 @@ public class NetworkUtils {
         return null;
     }
 
+    /**
+     * Get receipt from Sumup RESTful API
+     *
+     * @param url   URL for requesting Sumup receipt.
+     * @param token Sumup authorization token.
+     * @return Receipt data as JSON.
+     * @throws IOException
+     */
     public static String requestReceiptFromUrl(URL url, String token) throws IOException {
         String body = null;
         OkHttpClient client = new OkHttpClient();
@@ -146,7 +144,6 @@ public class NetworkUtils {
                 .url(url)
                 .header("access_token", token)
                 .build();
-
 
         Response response = client.newCall(request).execute();
         try {
@@ -175,6 +172,13 @@ public class NetworkUtils {
         return body;
     }
 
+    /**
+     * Get Sumup token using Sumup auth code.
+     *
+     * @param authCode Sumup auth code received by entering merchant credentials
+     * @return Sumup token for Sumup SDK login and REST services
+     * @throws IOException
+     */
     public static String requestTokenFromUrl(String authCode) throws IOException {
         String body = null;
         OkHttpClient client = new OkHttpClient();
@@ -220,12 +224,13 @@ public class NetworkUtils {
         return body;
     }
 
+    //TODO ask someone why this doesn't work...
     /**
      * Method to return Sumup token data from a HTTP POST request.
      *
      * @return The contents of the HTTP response.
      * @throws IOException Related to network and stream reading
-     */
+     *//*
     public static String getPostResponseFromHttpUrl(String authCode) throws IOException {
         Log.d("onPostResponse", "check");
         URL url = new URL("https://api.sumup.com/token");
@@ -240,7 +245,6 @@ public class NetworkUtils {
         connection.setRequestProperty("code", authCode);
 
         Log.d("status", " " + connection.getRequestProperties().toString());
-
 
         int responseCode = connection.getResponseCode();
 
@@ -259,5 +263,5 @@ public class NetworkUtils {
         Log.d("status", responseCode + " / " + buffer.toString());
 
         return buffer.toString();
-    }
+    }*/
 }

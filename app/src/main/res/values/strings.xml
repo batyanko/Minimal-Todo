@@ -33,12 +33,21 @@
     <string name="contact_entry_message">Please enter your contact details for a receipt of </string>
     <string name="payment_sum" translatable="false">2.15</string>
     <string name="email_address_title">E-mail address:</string>
-    <string name="phone_title">Phone number:</string>
+    <string name="phone_title">Phone number (+*******):</string>
     <string name="contact_entry_button_title">Proceed to payment</string>
     <string name="login_button_title">Login</string>
     <string name="charge_button_title">Charge</string>
     <string name="request_auth_code_button">Get Auth</string>
     <string name="request_token_button">Get Token</string>
-    <string name="request_receipt_button">Get Receipt</string>
+    <string name="request_receipt_button">Get last receipt</string>
+    <string name="receipt_invalid_token">Access token expired. Please login again, then press receipt button.</string>
+    <string name="login_message_success">Login successful.</string>
+    <string name="login_message_fail_token">Invalid Token. Please try again.</string>
+    <string name="login_message_fail_params">Invalid params.</string>
+    <string name="login_message_fail_location">Please enable location on device.</string>
+    <string name="login_message_fail_internet">Please enable Internet connection on device.</string>
+    <string name="login_message_fail_logged_in">Already logged in.</string>
+    <string name="transaction_code_label">Transaction code:</string>
+    <string name="tx_message_login_first">Please login first.</string>
 
 </resources>
