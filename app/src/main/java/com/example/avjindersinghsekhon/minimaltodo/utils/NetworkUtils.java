@@ -32,8 +32,10 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Scanner;
 
+import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -173,12 +175,57 @@ public class NetworkUtils {
         return body;
     }
 
-        /**
-         * Method to return Sumup token data from a HTTP POST request.
-         *
-         * @return The contents of the HTTP response.
-         * @throws IOException Related to network and stream reading
-         */
+    public static String requestTokenFromUrl(String authCode) throws IOException {
+        String body = null;
+        OkHttpClient client = new OkHttpClient();
+
+        FormBody.Builder formBuilder = new FormBody.Builder();
+        formBuilder.add("grant_type", "authorization_code");
+        formBuilder.add("client_id", BuildConfig.MINIMAL_CLIENT_ID);
+        formBuilder.add("client_secret", BuildConfig.MINIMAL_CLIENT_SECRET);
+        formBuilder.add("redirect_uri", "https://sites.google.com/view/strokeratecoach/home");
+        formBuilder.add("code", authCode);
+
+        RequestBody formBody = formBuilder.build();
+
+        Request request = new Request.Builder()
+                .url("https://api.sumup.com/token")
+                .post(formBody)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        try {
+            body = response.body().string();
+            Log.d("LeBody", body);
+            Log.d("thatMessage", response.message());
+            Log.d("header", response.header("Access-Control-Allow-Origin"));
+            Log.d("header", response.header("Access-Control-Request-Method"));
+            Log.d("header", response.header("Connection"));
+            Log.d("header", response.header("Content-Type"));
+            Log.d("header", response.header("Date"));
+            Log.d("header", response.header("Server"));
+            Log.d("header", response.header("Status"));
+            Log.d("header", response.header("Strict-Transport-Security"));
+            Log.d("header", response.header("Vary"));
+            Log.d("header", response.header("X-Content-Type-Options"));
+            Log.d("header", response.header("X-Frame-Options"));
+            Log.d("header", response.message());
+            Log.d("thatCode", response.code() + "");
+            Log.d("thoseHeaders", response.headers().names().toString());
+            response.close();
+        } catch (NullPointerException e) {
+            //yippppee
+            e.printStackTrace();
+        }
+        return body;
+    }
+
+    /**
+     * Method to return Sumup token data from a HTTP POST request.
+     *
+     * @return The contents of the HTTP response.
+     * @throws IOException Related to network and stream reading
+     */
     public static String getPostResponseFromHttpUrl(String authCode) throws IOException {
         Log.d("onPostResponse", "check");
         URL url = new URL("https://api.sumup.com/token");

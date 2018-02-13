@@ -46,7 +46,12 @@ public class SumupActivity extends AppCompatActivity {
 
     private static final String PREF_AUTH_CODE = "auth-code";
     private static final String PREF_TOKEN = "token";
-    private static final String PREF_TOKEN_EXPIRY_EPOCH = "token-expiry-epoch";
+    private static final String PREF_TOKEN_EXPIRY_EPOCH = "token-expiry-epoch"; //In ms
+
+    //Action codes for token-dependent operations
+    private static final int ACTION_LOGIN = 1;
+    private static final int ACTION_RECEIPT = 2;
+    private static final int ACTION_NONE = 3;
 
     private SharedPreferences pref;
 
@@ -59,23 +64,20 @@ public class SumupActivity extends AppCompatActivity {
         SumUpState.init(this);
         setContentView(R.layout.activity_sumup);
 
-        pref = pref = PreferenceManager.getDefaultSharedPreferences(this);
+        pref = PreferenceManager.getDefaultSharedPreferences(this);
 
         handleAuthIntent();
 
         //TODO enable Themes?
 
-        //Enable login...
         Button login = (Button) findViewById(R.id.button_login);
         login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SumUpLogin sumupLogin = SumUpLogin.builder("f9070809-39a3-4adb-92f5-588c4002c755").build();
-                SumUpAPI.openLoginActivity(SumupActivity.this, sumupLogin, REQUEST_CODE_LOGIN);
+                initApiLogin(true);
             }
         });
 
-        //Enable transaction...
         final Button btnCharge = (Button) findViewById(R.id.button_charge);
         btnCharge.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -143,11 +145,7 @@ public class SumupActivity extends AppCompatActivity {
         authRequestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Uri authUri = NetworkUtils.buildAuthorizationUrl(SumupActivity.this);
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW,
-                        authUri);
-                startActivity(browserIntent);
-                Log.d("AuthURI", authUri.toString());
+                initAuth();
             }
         });
 
@@ -167,8 +165,7 @@ public class SumupActivity extends AppCompatActivity {
         receiptRequestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new ReceiptQueryTask().execute(NetworkUtils.buildReceiptRequestUrl(
-                        "TDTPUNSPC3", "MCVVMGFK"));
+                initReceipt("TDTPUNSPC3", BuildConfig.SUMUP_MERCHANT);
             }
         });
 
@@ -178,28 +175,58 @@ public class SumupActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (data == null) return;
 
-        if (requestCode == REQUEST_CODE_PAYMENT && data != null) {
+        Bundle extra = data.getExtras();
+        int apiResultCode = extra.getInt(SumUpAPI.Response.RESULT_CODE);
+        updateOutput("Result Code: " + apiResultCode);
 
-            Bundle extra = data.getExtras();
+        if (requestCode == REQUEST_CODE_LOGIN) {
+            switch (resultCode) {
 
-            int apiResultCode = extra.getInt(SumUpAPI.Response.RESULT_CODE);
+                case SumUpAPI.Response.ResultCode.SUCCESSFUL: {
+                    updateOutput("Login successful.");
+                    break;
+                }
 
-            updateOutput("Result Code: " + apiResultCode);
+                case SumUpAPI.Response.ResultCode.ERROR_INVALID_TOKEN: {
+                    pref.edit().putLong(PREF_TOKEN_EXPIRY_EPOCH, 0).apply();
+                    updateOutput("Invalid Token. Please try again.");
+                    break;
+                }
+                case SumUpAPI.Response.ResultCode.ERROR_INVALID_PARAM: {
+                    updateOutput("Invalid params.");
+                    break;
+                }
+                case SumUpAPI.Response.ResultCode.ERROR_GEOLOCATION_REQUIRED: {
+                    updateOutput("Please enable location on device.");
+                    break;
+                }
+                case SumUpAPI.Response.ResultCode.ERROR_NO_CONNECTIVITY: {
+                    updateOutput("Please enable Internet connection on device.");
+                    break;
+                }
+                case SumUpAPI.Response.ResultCode.ERROR_ALREADY_LOGGED_IN: {
+                    updateOutput("Already logged in.");
+                    break;
+                }
+            }
+        }
 
+        if (requestCode == REQUEST_CODE_PAYMENT) {
             //Handle successful transaction
             if (apiResultCode == SumUpAPI.Response.ResultCode.SUCCESSFUL) {
                 String txCode = extra.getString(SumUpAPI.Response.TX_CODE);
                 TransactionInfo txInfo = extra.getParcelable(SumUpAPI.Response.TX_INFO);
                 String merchantCode = txInfo.getMerchantCode();
 
-                URL receiptRequestUrl = NetworkUtils.buildReceiptRequestUrl(txCode, merchantCode);
-                new ReceiptQueryTask().execute(receiptRequestUrl);
+                initReceipt(txCode, merchantCode);
 
                 updateOutput("\nTransaction Code: " + txCode);
                 updateOutput("\nTransaction Info: " + txInfo);
-
             }
+            //TODO handle error cases?
+
             String apiResponseMessage = extra.getString(SumUpAPI.Response.MESSAGE);
         }
     }
@@ -263,12 +290,13 @@ public class SumupActivity extends AppCompatActivity {
 
         @Override
         protected String[] doInBackground(String... params) {
+            String auth_code = params[0];
             String tokenResponceFromSumup = null;
             String token = null;
             int ttl = 0;
 
             try {
-                tokenResponceFromSumup = NetworkUtils.getPostResponseFromHttpUrl(params[0]);
+                tokenResponceFromSumup = NetworkUtils.requestTokenFromUrl(auth_code);
                 Log.d("TehTokenResponse", tokenResponceFromSumup + "");
             } catch (IOException e) {
                 e.printStackTrace();
@@ -297,12 +325,35 @@ public class SumupActivity extends AppCompatActivity {
 
             if ((tokenData.length >= 1) && tokenData[0] != null) {
 
-                updateOutput("Token: " + tokenData[0] + "Token Expiry: ");
+                updateOutput("Token: " + tokenData[0]);
+                initApiLogin(false);
 
             } else {
                 Log.d("nullResult", "check");
             }
         }
+    }
+
+
+    private void initApiLogin(Boolean firstAttempt) {
+        //Get new token, but avoid loop if it doesn't work
+        if (firstAttempt && pref.getLong(PREF_TOKEN_EXPIRY_EPOCH, 0) <= System.currentTimeMillis()) {
+            initAuth();
+        } else {
+            SumUpLogin sumupLogin = SumUpLogin
+                    .builder(BuildConfig.SUMUP_AFF_KEY)
+                    .accessToken(pref.getString(PREF_TOKEN, "null"))
+                    .build();
+            SumUpAPI.openLoginActivity(SumupActivity.this, sumupLogin, REQUEST_CODE_LOGIN);
+        }
+    }
+
+    private void initAuth() {
+        Uri authUri = NetworkUtils.buildAuthorizationUrl(SumupActivity.this);
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW,
+                authUri);
+        startActivity(browserIntent);
+        Log.d("AuthURI", authUri.toString());
     }
 
     private void handleAuthIntent() {
@@ -320,6 +371,14 @@ public class SumupActivity extends AppCompatActivity {
             pref.edit().putString(PREF_AUTH_CODE, authCode).apply();
 
             new TokenQueryTask().execute(authCode);
+        }
+    }
+
+    private void initReceipt(String txCode, String merchantCode) {
+        if (pref.getLong(PREF_TOKEN_EXPIRY_EPOCH, 0) <= System.currentTimeMillis()) {
+            updateOutput("Access token expired. Please login again and then press receipt button.");
+        } else {
+            new ReceiptQueryTask().execute(NetworkUtils.buildReceiptRequestUrl(txCode, merchantCode));
         }
     }
 
