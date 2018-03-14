@@ -1,8 +1,20 @@
+# Test Implementation of Sumup's Android SDK and REST APIs
+
+Features:
+- Payment by SMS
+- Invoice display on successful transaction
+
+Installation:
+1. Import in Android Studio as usual
+2. Apply for test Sumup credentials on https://me.sumup.com/developers
+3. Fill in the credentials as gradle build variables (i.e. in your local gradle.properties file)
+
+This functionality built on the Minimal ToDo app. See below for details on the forked project:
+
 # Minimal ![Build Status](https://travis-ci.org/avjinder/Minimal-Todo.svg?branch=master)
 
 <img src="/screenshots/app_icon.png" height="200px"/> <br>
 A fully Material ToDo app with minimal features, just enough to be useful.
-
 
 # Screenshots:
 <img src="/screenshots/main_empty_light.png" height="400px"/> <img src="/screenshots/main_empty_dark.png" height="400px"/>
